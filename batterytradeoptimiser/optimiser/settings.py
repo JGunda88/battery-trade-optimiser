@@ -9,3 +9,5 @@ class Settings:
     mip_gap = 0.01  # MIP gap for solver, if supported
     presolve = True  # Whether to use presolve in solver, if supported
     terminal_soc_penalty_per_mwh = 100000.0  # Penalty for terminal state of charge in $/MWh
+    lp_filename = "model.lp"  # Filename to save LP model, if needed
+    iis_filename = "model.ilp"  # Filename to save IIS, if needed

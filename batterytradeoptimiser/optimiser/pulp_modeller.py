@@ -4,14 +4,17 @@ from batterytradeoptimiser.optimiser.settings import Settings
 
 @dataclass
 class OptimiserSolution:
-    status: str
-    objective: float
-    charge_power_m1: dict[str, float]
-    discharge_power_m1: dict[str, float]
-    charge_power_m2: dict[str, float]
-    discharge_power_m2: dict[str, float]
-    state_of_charge: dict[str, float]
-    is_discharging: dict[str, int]
+    """
+    Dataclass to hold the optimiser solution details. Can be extended as needed.
+    """
+    status: str # e.g., "Optimal", "Infeasible"
+    objective: float   # Objective value of the solved model - profit in GBP
+    charge_power_m1: dict[str, float] # Charge power in MW for Market 1 (half-hourly)
+    discharge_power_m1: dict[str, float] # Discharge power in MW for Market 1 (half-hourly)
+    charge_power_m2: dict[str, float]  # Charge power in MW for Market 2 (hourly)
+    discharge_power_m2: dict[str, float] # Discharge power in MW for Market 2 (hourly)
+    state_of_charge: dict[str, float] # State of Charge in MWh at each time point
+    is_discharging: dict[str, int] # Binary indicator if discharging (1) or not (0) at each time point
 
 class PulpModeller(object):
     def __init__(self, processed_data):
@@ -20,6 +23,7 @@ class PulpModeller(object):
     def solve_model(self) -> OptimiserSolution:
         """
         Main method to create, solve the model, and extract the solution.
+        This is the only method exposed to the outside.
         :return:
         """
         # Implement model solving logic here
@@ -28,14 +32,16 @@ class PulpModeller(object):
         self._integrate_constraints()
         self._integrate_objective()
         solver = self._get_solver()
-        print("\n ********************************************* \n Solver configuration:", solver.__dict__)
         self.m.solve(solver)
 
         self._write_lp_and_iis()
         return self._extract_solution()
 
     def _create_model(self):
-        # Implement model creation logic here
+        """
+        Create an empty PuLP model. Later variables, constraints, and objective will be added to this model.
+        :return:
+        """
         self.m = pulp.LpProblem("BatteryBESS_MILP_Binary", pulp.LpMaximize)
 
     def _integrate_variables(self):
@@ -47,6 +53,7 @@ class PulpModeller(object):
         charge_power_m1[t] [0, max_charge_mw] # Market 2
         discharge_power_m1[t] in [0, max_discharge_mw] # Market 2
         state_of_charge[t] in [0, max_energy_mwh] # state of charge at end of step t. state_of_charge[0] = Battery_initial_soc
+        is_discharging[t] in {0,1} # mode: 0 charge/idle, 1 discharge/idle
         :return:
         """
         ms = self.processed_data.market_series
@@ -351,16 +358,16 @@ class PulpModeller(object):
             return pulp.PULP_CBC_CMD(msg=True, timeLimit=time_budget, gapRel=gap, threads=threads,
                                      presolve=presolve)
 
-    def _write_lp_and_iis(self, lp_filename="model.lp", iis_filename="model.ilp"):
+    def _write_lp_and_iis(self):
         """
         Writes the LP file and, if infeasible, the IIS file for debugging.
         """
-        self.m.writeLP(lp_filename)
+        self.m.writeLP(Settings.lp_filename)
         # Write IIS file if model is infeasible and solver supports it
         if pulp.LpStatus[self.m.status] == "Infeasible":
             try:
                 self.m.writeMPS("model.mps")
-                pulp.findIIS(self.m, iis_filename)
+                pulp.findIIS(self.m, Settings.iis_filename)
             except Exception:
                 pass  # IIS extraction may not be supported by all solvers
 

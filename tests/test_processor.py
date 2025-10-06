@@ -10,7 +10,7 @@ def test_preprocessor():
     processed = pre.run()
     print("Battery Properties:")
     print(processed.battery_properties)
-    print("\nMarket Series:")
+    print("\n Market Series:")
     print("Market 1 (half-hourly):", list(processed.market_series.market1_price_hh.items())[:3], "...")
     print("Market 2 (hourly):", list(processed.market_series.market2_price_h.items())[:3], "...")
     print("Market 2 (half-hourly):", list(processed.market_series.market2_price_hh.items())[:3], "...")

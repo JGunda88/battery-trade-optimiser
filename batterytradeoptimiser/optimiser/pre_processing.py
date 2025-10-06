@@ -4,6 +4,10 @@ import pandas as pd
 
 @dataclass
 class BatteryProperties:
+    """
+    Data class to hold battery properties with default values.
+    These defaults are overridden by reading the input excel file.
+    """
     capacity_mwh: float = 4.0
     initial_soc_mwh: float = capacity_mwh
     max_charge_mw: float = 2.0
@@ -18,26 +22,46 @@ class BatteryProperties:
 
 @dataclass
 class MarketSeries:
-    market1_price_hh: dict[str, float]
-    market2_price_h: dict[str, float]
-    market2_price_hh: dict[str, float]
-    time_points: list[str]
+    """
+    Data class to hold market price series and time points.
+    """
+    market1_price_hh: dict[str, float] # half-hourly prices for Market 1
+    market2_price_h: dict[str, float]  # hourly prices for Market 2
+    market2_price_hh: dict[str, float] # half-hourly prices for Market 2 (extrapolated)
+    time_points: list[str] # sorted list of half-hourly timestamp strings
 
 @dataclass
 class ProcessedInput:
+    """
+    Data class to hold all processed input data.
+    This will be passed to the optimiser.
+    """
     battery_properties: BatteryProperties
     market_series: MarketSeries
 
 class PreProcessor:
+    """
+    Class to handle pre-processing of input data from Excel files.
+    It reads battery properties and market price series, and packs them into structured data classes: BatteryProperties,
+    MarketSeries, and ProcessedInput.
+    """
     def __init__(self, market_data: Path, battery_data: Path):
+        """
+        Initializes the PreProcessor with paths to market data and battery data Excel files.
+        :param market_data:
+        :param battery_data:
+        """
         self.market_data = market_data
         self.battery_data = battery_data
         self.processed_input = None
 
     def run(self) -> ProcessedInput:
+        """
+        Main method to execute the pre-processing steps. This is the only method exposed to the outside.
+        :return:
+        """
         battery_properties = self._extract_battery_properties()
         market_series = self._extract_market_series()
-        # market_series = self._extract_market_series_2()
         return ProcessedInput(
             battery_properties=battery_properties,
             market_series=market_series
@@ -287,7 +311,11 @@ class PreProcessor:
 
     @staticmethod
     def round_to_half_hour(ts: pd.Timestamp) -> pd.Timestamp:
-        """Round timestamp to the nearest half hour (:00 or :30)."""
+        """
+        It is possible that input timestamps are not exactly on the half-hour.
+        This function rounds them to the nearest half-hour (:00 or :30) to ensure that data of two markets is aligned.
+
+        """
         ts = pd.to_datetime(ts)
         minute = ts.minute
 
