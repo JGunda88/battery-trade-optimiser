@@ -2,6 +2,7 @@ from pathlib import Path
 from utils.check_io_files import FileChecker
 from batterytradeoptimiser.optimiser.pre_processing import PreProcessor
 from batterytradeoptimiser.optimiser.pulp_modeller import PulpModeller
+from batterytradeoptimiser.optimiser.post_processor import PostProcessor
 
 class Runner(object):
     def __init__(self, market_excel_path: str, battery_excel_path: str, results_output_path: str):
@@ -43,16 +44,9 @@ class Runner(object):
         # pre-process input data
         processed_input = PreProcessor(market_data=self.market_path, battery_data=self.battery_path).run()
         solution = PulpModeller(processed_input).solve_model()
-        # call the selected modeller to build and solve the problem
-        # if settings.modeller = "PULP":
-        #     solution = PulpModeller(processed_input).solve()
-        # elif settings.modeller = "PYOMO":
-        #     solution = PyomoModeller(processed_input).solve()
-        # elif settings.modeller = "Gurobi":
-        #     solution = GurobiModeller(processed_input).solve()
 
         # post-process the solution and write the results into REST response and excel file
-        # PostProcessor(solution, self.results_path).run()
+        PostProcessor(solution, self.results_path).run()
 
 
 

@@ -156,10 +156,10 @@ class PreProcessor:
 
         # All half-hourly time points
         time_points = sorted(list(market1_price_hh.keys()))
-        time_points = time_points[0:336] # limit to first 336 points for testing
+        time_points = time_points[0:12] # limit to first 336 points for testing
 
-        for tp in time_points[:100]:
-            print(f" tp --> {tp} - M1--> {market1_price_hh.get(tp)} - M2 --> {market2_price_hh.get(tp)}")
+        # for tp in time_points[:100]:
+        #     print(f" tp --> {tp} - M1--> {market1_price_hh.get(tp)} - M2 --> {market2_price_hh.get(tp)}")
 
         return MarketSeries(
             market1_price_hh=market1_price_hh,

@@ -1,5 +1,6 @@
 import pulp
 from dataclasses import dataclass
+from batterytradeoptimiser.optimiser.settings import Settings
 
 @dataclass
 class OptimiserSolution:
@@ -15,7 +16,6 @@ class OptimiserSolution:
 class PulpModeller(object):
     def __init__(self, processed_data):
         self.processed_data = processed_data
-        self.step_h = 0.5  # half-hourly steps
 
     def solve_model(self) -> OptimiserSolution:
         """
@@ -27,8 +27,10 @@ class PulpModeller(object):
         self._integrate_variables()
         self._integrate_constraints()
         self._integrate_objective()
-        solver = self._get_solver(solver_name="cbc", time_budget=300, gap=0.01, threads=2)
+        solver = self._get_solver()
+        print("\n ********************************************* \n Solver configuration:", solver.__dict__)
         self.m.solve(solver)
+
         self._write_lp_and_iis()
         return self._extract_solution()
 
@@ -80,7 +82,159 @@ class PulpModeller(object):
         )
 
     def _integrate_constraints(self):
+        """
+        Integrate constraints into the model.
+        :return:
+        """
+        self._apply_limits_on_charging_discharging()
+        self._apply_no_simultaneous_charge_discharge()
+        self._apply_soc_update()
+        self._apply_terminal_soc_constraint()
+        self._apply_bounds_on_soc()
+        self._apply_market2_consistency_constraints()
 
+    def _apply_limits_on_charging_discharging(self):
+        """
+        Apply limits on charging and discharging power.
+        :return:
+        """
+        ms = self.processed_data.market_series
+        bp = self.processed_data.battery_properties
+        time_points = ms.time_points
+
+        for tp in time_points:
+            # Total charging power limit
+            self.m += (
+                self.charge_power_m1[tp] + self.charge_power_m2[tp] <= bp.max_charge_mw,
+                f"Max_Charge_Limit_{tp}"
+            )
+            # Total discharging power limit
+            self.m += (
+                self.discharge_power_m1[tp] + self.discharge_power_m2[tp] <= bp.max_discharge_mw,
+                f"Max_Discharge_Limit_{tp}"
+            )
+
+    def _apply_no_simultaneous_charge_discharge(self):
+        """
+        Apply no simultaneous charge and discharge constraints.
+        :return:
+        """
+        ms = self.processed_data.market_series
+        bp = self.processed_data.battery_properties
+        time_points = ms.time_points
+        M = bp.max_discharge_mw + bp.max_charge_mw  # Big-M
+
+        for tp in time_points:
+            self.m += (
+                self.discharge_power_m1[tp] + self.discharge_power_m2[tp] <= M * self.is_discharging[tp],
+                f"No_Simultaneous_Discharge_{tp}"
+            )
+            self.m += (
+                self.charge_power_m1[tp] + self.charge_power_m2[tp] <= M * (1 - self.is_discharging[tp]),
+                f"No_Simultaneous_Charge_{tp}"
+            )
+
+    def _apply_soc_update(self):
+        """
+        Apply state of charge update constraints.
+        :return:
+        """
+        ms = self.processed_data.market_series
+        bp = self.processed_data.battery_properties
+        time_points = ms.time_points
+
+        for idx, t in enumerate(time_points):
+            if idx > 0:
+                t_prev = time_points[idx - 1]
+                self.m += (
+                    self.state_of_charge[t] ==
+                    self.state_of_charge[t_prev]
+                    + (self.charge_power_m1[t] + self.charge_power_m2[t]) * bp.charging_efficiency*Settings.step_size
+                    - (self.discharge_power_m1[t] + self.discharge_power_m2[t])*Settings.step_size / bp.discharging_efficiency,
+                    f"SoC_Update_{t}"
+                )
+
+    def _apply_terminal_soc_constraint(self):
+        """
+        Apply terminal state of charge constraint.
+        :return:
+        """
+        ms = self.processed_data.market_series
+        bp = self.processed_data.battery_properties
+        time_points = ms.time_points
+
+        self.m += (
+            self.state_of_charge[time_points[-1]] == bp.initial_soc_mwh,
+            "Terminal_SoC"
+        )
+
+    def _apply_terminal_soc_constraint_flexible(self, target_soc: float):
+        """
+        Apply terminal state of charge constraint with flexibility.
+        :param target_soc: Target state of charge at the end of the time horizon.
+        :return:
+        """
+        ms = self.processed_data.market_series
+        bp = self.processed_data.battery_properties
+        time_points = ms.time_points
+
+        # Allow deviation from target_soc with a penalty in the objective function
+        deviation = pulp.LpVariable("soc_deviation", lowBound=0, cat="Continuous")
+        self.m += (
+            self.state_of_charge[time_points[-1]] >= target_soc - deviation,
+            "Terminal_SoC_Lower_Bound"
+        )
+        self.m += (
+            self.state_of_charge[time_points[-1]] <= target_soc + deviation,
+            "Terminal_SoC_Upper_Bound"
+        )
+        # Add penalty for deviation in the objective function
+        penalty_per_mwh = Settings.terminal_soc_penalty_per_mwh  # Define this in settings
+        self.m += penalty_per_mwh * deviation, "Terminal_SoC_Deviation_Penalty"
+
+    def _apply_bounds_on_soc(self):
+        """
+        Apply bounds on state of charge.
+        :return:
+        """
+        ms = self.processed_data.market_series
+        bp = self.processed_data.battery_properties
+        time_points = ms.time_points
+
+        for tp in time_points:
+            self.m += (
+                self.state_of_charge[tp] >= 0,
+                f"SoC_Lower_Bound_{tp}"
+            )
+            self.m += (
+                self.state_of_charge[tp] <= bp.capacity_mwh,
+                f"SoC_Upper_Bound_{tp}"
+            )
+
+    def _apply_market2_consistency_constraints(self):
+        """
+        Apply Market 2 consistency constraints.
+        Ensures that the charging/discharging power allocated to Market 2 remains constant within each hour.
+        C7: Market 2 Charge Consistency Constraint: charge_power_m2[t] == charge_power_m2[t+1]
+        C8: Market 2 Discharge Consistency Constraint: discharge_power_m2[t] == discharge_power_m2[t+1]
+        :return:
+        """
+        ms = self.processed_data.market_series
+        time_points = ms.time_points
+
+        for i in range(0, len(time_points) - 1, 2):
+            tp = time_points[i]
+            tp_next = time_points[i + 1]
+            self.m += (
+                self.charge_power_m2[tp] == self.charge_power_m2[tp_next],
+                f"Market2_Charge_Consistency_{tp}"
+            )
+            self.m += (
+                self.discharge_power_m2[tp] == self.discharge_power_m2[tp_next],
+                f"Market2_Discharge_Consistency_{tp}"
+            )
+
+    def _integrate_constraints_old(self):
         """
         Add following constraints:
         C1: charge_power_m1 + charge_power_m2 <= bp.max_charge_mw
@@ -101,9 +255,7 @@ class PulpModeller(object):
         time_points = ms.time_points
 
         # Binary variable for charge/discharge state
-        self.is_discharging = pulp.LpVariable.dicts(
-            "is_discharging", time_points, cat="Binary"
-        )
+        self.is_discharging = pulp.LpVariable.dicts("is_discharging", time_points, cat="Binary")
         M = bp.max_discharge_mw + bp.max_charge_mw  # Big-M
 
         for idx, t in enumerate(time_points):
@@ -132,8 +284,8 @@ class PulpModeller(object):
                 self.m += (
                     self.state_of_charge[t] ==
                     self.state_of_charge[t_prev]
-                    + (self.charge_power_m1[t] + self.charge_power_m2[t]) * bp.charging_efficiency*self.step_h
-                    - (self.discharge_power_m1[t] + self.discharge_power_m2[t])*self.step_h / bp.discharging_efficiency,
+                    + (self.charge_power_m1[t] + self.charge_power_m2[t]) * bp.charging_efficiency*Settings.step_size
+                    - (self.discharge_power_m1[t] + self.discharge_power_m2[t])*Settings.step_size / bp.discharging_efficiency,
                     f"C5_SoC_Update_{t}"
                 )
 
@@ -173,25 +325,31 @@ class PulpModeller(object):
         profit_terms = []
         for t in time_points:
             profit_terms.append(
-                self.discharge_power_m1[t] * ms.market1_price_hh[t]*self.step_h
-                - self.charge_power_m1[t] * ms.market1_price_hh[t]*self.step_h
+                self.discharge_power_m1[t] * ms.market1_price_hh[t]*Settings.step_size
+                - self.charge_power_m1[t] * ms.market1_price_hh[t]*Settings.step_size
                 + self.discharge_power_m2[t] * ms.market2_price_hh[t]
                 - self.charge_power_m2[t] * ms.market2_price_hh[t]
             )
         self.m += pulp.lpSum(profit_terms), "Total_Profit"
 
-    def _get_solver(self, solver_name="cbc", time_budget=300, gap=0.01, threads=2):
+    def _get_solver(self):
         """
         Returns the solver instance based on the solver_name.
         Supported: 'cbc', 'gurobi', 'cplex'
         """
-        solver_name = solver_name.lower()
+        solver_name = Settings.solver.lower()
+        time_budget = Settings.time_budget
+        threads = Settings.threads
+        presolve = Settings.presolve
+        gap = Settings.mip_gap
+        solver_path = r"C:\gurobi1201\win64\bin\gurobi_cl.exe"  # Example path to Gurobi executable
         if solver_name == "gurobi":
-            return pulp.GUROBI_CMD(msg=True, timeLimit=time_budget, gapRel=gap, threads=threads)
+            return pulp.GUROBI_CMD(msg=True, timeLimit=time_budget, gapRel=gap, threads=threads, path=solver_path)
         elif solver_name == "cplex":
             return pulp.CPLEX_CMD(msg=True, timeLimit=time_budget, gapRel=gap, threads=threads)
         else:  # Default to CBC
-            return pulp.PULP_CBC_CMD(msg=True, timeLimit=time_budget, gapRel=gap, threads=threads)
+            return pulp.PULP_CBC_CMD(msg=True, timeLimit=time_budget, gapRel=gap, threads=threads,
+                                     presolve=presolve)
 
     def _write_lp_and_iis(self, lp_filename="model.lp", iis_filename="model.ilp"):
         """
