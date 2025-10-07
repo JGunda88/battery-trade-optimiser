@@ -2,6 +2,9 @@ from dataclasses import dataclass
 from pathlib import Path
 import pandas as pd
 
+from batterytradeoptimiser.optimiser.settings import Settings
+
+
 @dataclass
 class BatteryProperties:
     """
@@ -142,7 +145,8 @@ class PreProcessor:
           - 'Half-hourly data': Contains Market 1 prices at half-hourly intervals.
           - 'Hourly data': Contains Market 2 prices at hourly intervals.
 
-        Market 2 hourly prices are extrapolated to half-hourly by duplicating each hourly price for both the :00 and :30 time slots.
+        Market 2 hourly prices are extrapolated to half-hourly by duplicating each hourly price for both the :00 and
+        :30 time slots.
 
         Returns:
             MarketSeries: An instance containing:
@@ -180,10 +184,10 @@ class PreProcessor:
 
         # All half-hourly time points
         time_points = sorted(list(market1_price_hh.keys()))
-        time_points = time_points[0:12] # limit to first 336 points for testing
 
-        # for tp in time_points[:100]:
-        #     print(f" tp --> {tp} - M1--> {market1_price_hh.get(tp)} - M2 --> {market2_price_hh.get(tp)}")
+        # apply problem horizon setting here - basically we reduce the time points to reduce problem size.
+        end_timme_point = Settings.problem_horizon_half_hourly_slots
+        time_points = time_points[0:end_timme_point]
 
         return MarketSeries(
             market1_price_hh=market1_price_hh,

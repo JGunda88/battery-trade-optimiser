@@ -1,5 +1,6 @@
 import pulp
 from dataclasses import dataclass
+import time
 from batterytradeoptimiser.optimiser.settings import Settings
 
 @dataclass
@@ -15,9 +16,11 @@ class OptimiserSolution:
     discharge_power_m2: dict[str, float] # Discharge power in MW for Market 2 (hourly)
     state_of_charge: dict[str, float] # State of Charge in MWh at each time point
     is_discharging: dict[str, int] # Binary indicator if discharging (1) or not (0) at each time point
+    optimiser_run_time: float | None = None # Time taken to solve the model in seconds
 
 class PulpModeller(object):
     def __init__(self, processed_data):
+        self.optimiser_run_time = None # Time taken to solve the model
         self.processed_data = processed_data
 
     def solve_model(self) -> OptimiserSolution:
@@ -27,14 +30,15 @@ class PulpModeller(object):
         :return:
         """
         # Implement model solving logic here
+        start = time.perf_counter()
         self._create_model()
         self._integrate_variables()
         self._integrate_constraints()
         self._integrate_objective()
         solver = self._get_solver()
         self.m.solve(solver)
-
         self._write_lp_and_iis()
+        self.optimiser_run_time = time.perf_counter() - start
         return self._extract_solution()
 
     def _create_model(self):
@@ -393,5 +397,6 @@ class PulpModeller(object):
             charge_power_m2=extract_var_dict(self.charge_power_m2),
             discharge_power_m2=extract_var_dict(self.discharge_power_m2),
             state_of_charge=extract_var_dict(self.state_of_charge),
-            is_discharging={t: int(round(pulp.value(self.is_discharging[t]))) for t in time_points}
+            is_discharging={t: int(round(pulp.value(self.is_discharging[t]))) for t in time_points},
+            optimiser_run_time=self.optimiser_run_time
         )

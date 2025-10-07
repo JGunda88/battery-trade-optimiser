@@ -11,3 +11,5 @@ class Settings:
     terminal_soc_penalty_per_mwh = 100000.0  # Penalty for terminal state of charge in $/MWh
     lp_filename = "model.lp"  # Filename to save LP model, if needed
     iis_filename = "model.ilp"  # Filename to save IIS, if needed
+    decimal_places = 2 # Decimal places for rounding outputs
+    problem_horizon_half_hourly_slots = 12  # Default problem horizon in number of half-hourly slots

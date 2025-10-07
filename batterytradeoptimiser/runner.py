@@ -37,30 +37,14 @@ class Runner(object):
 
     def _call_optimiser(self) -> dict:
         """
-        Placeholder for the real optimiser call.
-        Replace this with: load data → optimise → write results.
-        :return:
+        Call the optimiser pipeline: pre-process input, solve model, post-process results.
+        :return: dict containing the response for the FastAPI endpoint.
         """
         # pre-process input data
         processed_input = PreProcessor(market_data=self.market_path, battery_data=self.battery_path).run()
+        # build and solve the optimisation model
         solution = PulpModeller(processed_input).solve_model()
+        # post-process the solution and write the results into Excel file, and prepare a response dict for the app
+        response = PostProcessor(solution, self.results_path).run()
 
-        # post-process the solution and write the results into REST response and excel file
-        PostProcessor(solution, self.results_path).run()
-
-
-
-
-
-
-
-
-
-        return {
-            "objective_gbp": 0.0,
-            "messages": ["runner placeholder"],
-            "outputs": {"results_output_path": str(self.results_path)}
-        }
-
-
-
+        return response
