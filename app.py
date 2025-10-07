@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 import time
 from batterytradeoptimiser.runner import Runner
-from utils.custom_excpetions import InputFileMissing, InvalidFileType, OutputPathError
+from utils.custom_exceptions import InputFileMissing, InvalidFileType, OutputPathError
 from batterytradeoptimiser.optimiser.settings import Settings
 
 app = FastAPI(title="Battery Trade Optimiser API", version="0.1.0")

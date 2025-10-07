@@ -3,7 +3,7 @@ Utility functions for validating input files and preparing output paths.
 """
 
 from pathlib import Path
-from utils.custom_excpetions import InputFileMissing, InvalidFileType, OutputPathError
+from utils.custom_exceptions import InputFileMissing, InvalidFileType, OutputPathError
 VALID_XLS = {".xls", ".xlsx"}
 
 class FileChecker:

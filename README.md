@@ -73,7 +73,11 @@ Battery Properties: A sheet named "Data" with parameters and values.
 4. Receive optimization results including profit objective and output file lo
 
 # Dependencies
-Project dependecies are managed via poetry. Key dependencies include:
+Project dependecies are managed via poetry.  To install dependencies, run:
+```shell
+poetry install
+```
+Key dependencies include:
 - Python 3.8+
 - FastAPI
 - Pydantic
@@ -89,4 +93,3 @@ The user can use this script to test the functionality at API level or the Optim
  
  # Contact
 For questions or contributions, please contact Jagadeesh Gunda, jack.jagadeesh@gmail.com.
- 
