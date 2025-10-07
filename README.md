@@ -58,6 +58,7 @@ Returns structured results for API responses.
 1. Prepare input Excel files:
 Market Data: Two sheets named "Half-hourly data" and "Hourly data" with timestamps and prices.
 Battery Properties: A sheet named "Data" with parameters and values.
+Sample input files are provided in the "sample_data" folder.
 2. Run the FastAPI server: 
     ```shell
     uvicorn app:app --host 127.0.0.1 --port 8000 --reload

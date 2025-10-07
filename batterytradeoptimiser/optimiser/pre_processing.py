@@ -1,3 +1,14 @@
+"""
+This module handles the pre-processing of input data for the battery trading optimiser.
+It reads battery properties and market price series from Excel files, and organizes them into structured data classes
+for use in the optimisation model.
+
+Note that market-1 operates on a half-hourly basis, while market-2 operates on an hourly basis.
+For the modelling simplification, market-2 prices are extrapolated to half-hourly by repeating the hourly price
+for both half-hours within that hour. And, then the modelling is done on a half-hourly basis for both markets.
+
+Thats why one can see both hourly and half-hourly prices for market-2 in the MarketSeries data class.
+"""
 from dataclasses import dataclass
 from pathlib import Path
 import pandas as pd
@@ -61,7 +72,7 @@ class PreProcessor:
     def run(self) -> ProcessedInput:
         """
         Main method to execute the pre-processing steps. This is the only method exposed to the outside.
-        :return:
+        :return: ProcessedInput instance containing BatteryProperties and MarketSeries.
         """
         battery_properties = self._extract_battery_properties()
         market_series = self._extract_market_series()

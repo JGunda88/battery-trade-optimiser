@@ -1,3 +1,10 @@
+"""
+This module contains two methods to test the core functionality.
+1) test_post_request_to_api(): Sends a POST request to the FastAPI endpoint and prints the response.
+   For this test to work, the FastAPI server must be running (i.e. run app.py with uvicorn).
+2) test_direct_call(): Directly calls the Runner class to test the core functionality without FastAPI.
+"""
+
 import requests
 import json
 

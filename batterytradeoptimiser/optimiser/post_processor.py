@@ -1,3 +1,7 @@
+"""
+This module contains the PostProcessor class that processes the optimiser solution
+and writes the results to an Excel file. It also prepares a response dictionary that is consumed by the API.
+"""
 from dataclasses import asdict
 from pathlib import Path
 import pandas as pd
@@ -15,6 +19,7 @@ class PostProcessor:
         """
         Main method that exposes the post-processor functionality.
         Write optimiser solution to Excel — all time series in one sheet.
+        :return: dict containing job status, objective value, messages, and output paths
         """
         sol_dict = asdict(self.solution)
 

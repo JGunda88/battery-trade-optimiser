@@ -1,3 +1,11 @@
+"""
+This module defines a MILP modeller using PuLP for optimizing battery trading between two markets.
+It includes the creation of decision variables, constraints, objective function, and the solve the model.
+
+Note that market-1 operates on a half-hourly basis, while market-2 operates on an hourly basis.
+For the modelling simplification, market-2 prices are extrapolated to half-hourly by repeating the hourly price
+for both half-hours within that hour. And, then the modelling is done on a half-hourly basis for both markets.
+"""
 import pulp
 from dataclasses import dataclass
 import time
@@ -27,7 +35,7 @@ class PulpModeller(object):
         """
         Main method to create, solve the model, and extract the solution.
         This is the only method exposed to the outside.
-        :return:
+        :return: OptimiserSolution
         """
         # Implement model solving logic here
         start = time.perf_counter()

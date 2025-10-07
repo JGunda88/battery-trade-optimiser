@@ -19,7 +19,7 @@ class Runner(object):
         Main method that exposes the runner functionality.
         Validate input files and output path, then call the optimiser pipeline.
         Returns a result dict expected by the FastAPI response mapper.
-        :return:
+        :return: dict containing the response for the FastAPI endpoint.
         """
         self._check_io_files()
         result = self._call_optimiser()
@@ -29,7 +29,7 @@ class Runner(object):
         """
         Validate input files and prepare output path.
         There is no point of running optimiser if the inputs are not valid or the output path cannot be prepared.
-        :return:
+        :return: None
         """
         self.market_path = FileChecker(self._market_excel_path).validate_excel_file()
         self.battery_path = FileChecker(self._battery_excel_path).validate_excel_file()
