@@ -11,35 +11,9 @@ class PostProcessor:
         self.solution = solution
         self.results_path = Path(results_path)
 
-    def run1(self) -> dict:
-        """Write optimiser solution to Excel — one sheet per dictionary."""
-        # Convert dataclass to dict
-        sol_dict = asdict(self.solution)
-
-        # Create Excel writer
-        with pd.ExcelWriter(self.results_path, engine="openpyxl") as writer:
-            # Write scalar values first
-            summary = pd.DataFrame({
-                "Field": ["status", "objective"],
-                "Value": [sol_dict["status"], sol_dict["objective"]],
-            })
-            summary.to_excel(writer, sheet_name="Summary", index=False)
-
-            # Write each dictionary to a separate sheet
-            for key, value in sol_dict.items():
-                if isinstance(value, dict):
-                    df = pd.DataFrame(list(value.items()), columns=["timestamp", key])
-                    df.to_excel(writer, sheet_name=key, index=False)
-
-        # Return minimal API payload
-        return {
-            "objective": float(self.solution.objective or 0.0),
-            "messages": [f"solve status: {self.solution.status}"],
-            "outputs": {"results_output_path": str(self.results_path)},
-        }
-
     def run(self) -> dict:
         """
+        Main method that exposes the post-processor functionality.
         Write optimiser solution to Excel — all time series in one sheet.
         """
         sol_dict = asdict(self.solution)
