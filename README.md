@@ -54,6 +54,39 @@ Returns structured results for API responses.
 - Returns job status, objective value, messages, and output file paths.
 - Handles exceptions and returns appropriate HTTP error codes.
  
+## Setup Instructions
+
+1. Install Poetry (if not installed):
+
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+2. Clone the repository and navigate into it:
+
+```bash
+git clone <repo-url>
+cd batterytradeoptimiser
+```
+
+3. Install dependencies and create virtual environment:
+
+```bash
+poetry install
+```
+
+4. (Optional) Activate the virtual environment:
+
+```bash
+poetry shell
+```
+
+5. Run the application or scripts using:
+
+```bash
+poetry run python app.py
+```
+
 # Usage
 1. Prepare input Excel files:
 Market Data: Two sheets named "Half-hourly data" and "Hourly data" with timestamps and prices.
@@ -91,6 +124,7 @@ Key dependencies include:
 At present no unit tests are provided.
 But there is a test script "test_end_point.py" under tests folder to test the API endpoint with sample data files.
 The user can use this script to test the functionality at API level or the Optimisation level.
- 
+ > **This could be the easiet approach to test the functionality once the virtual environment with needed depedencies 
+ > are created.**
  # Contact
 For questions or contributions, please contact Jagadeesh Gunda, jack.jagadeesh@gmail.com.
