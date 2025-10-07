@@ -92,19 +92,20 @@ poetry run python app.py
 Market Data: Two sheets named "Half-hourly data" and "Hourly data" with timestamps and prices.
 Battery Properties: A sheet named "Data" with parameters and values.
 Sample input files are provided in the "sample_data" folder.
-2. Run the FastAPI server: 
+2. Adjust the settings in optitimier/settings.py as needed (e.g., solver choice, market horizon, etc).
+3. Run the FastAPI server: 
     ```shell
     uvicorn app:app --host 127.0.0.1 --port 8000 --reload
     ```
-3. Submit a POST request to /optimise_battery with JSON body:
-    ```json
-   {
-     "market_excel_path": "path/to/market_data.xlsx",
-     "battery_excel_path": "path/to/battery_properties.xlsx",
-     "results_output_path": "path/to/output_results.xlsx"
-   }
-   ```   
-4. Receive optimization results including profit objective and output file lo
+   4. Submit a POST request to /optimise_battery with JSON body:
+       ```json
+      {
+        "market_excel_path": "path/to/market_data.xlsx",
+        "battery_excel_path": "path/to/battery_properties.xlsx",
+        "results_output_path": "path/to/output_results.xlsx"
+      }
+      ```   
+5. Receive optimization results including profit objective and output file lo
 
 # Dependencies
 Project dependecies are managed via poetry.  To install dependencies, run:
@@ -124,7 +125,7 @@ Key dependencies include:
 At present no unit tests are provided.
 But there is a test script "test_end_point.py" under tests folder to test the API endpoint with sample data files.
 The user can use this script to test the functionality at API level or the Optimisation level.
- > **This could be the easiet approach to test the functionality once the virtual environment with needed depedencies 
+ > **This could be the easiest approach to test the functionality once the virtual environment with needed depedencies 
  > are created.**
  # Contact
 For questions or contributions, please contact Jagadeesh Gunda, jack.jagadeesh@gmail.com.

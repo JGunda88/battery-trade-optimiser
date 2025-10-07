@@ -108,7 +108,9 @@ class PulpModeller(object):
         self._apply_limits_on_charging_discharging()
         self._apply_no_simultaneous_charge_discharge()
         self._apply_soc_update()
-        self._apply_terminal_soc_constraint()
+        # self._apply_terminal_soc_constraint()
+        # soft constraint modelling for terminal soc - activate if needed
+        # self._apply_terminal_soc_constraint_flexible()
         self._apply_bounds_on_soc()
         self._apply_market2_consistency_constraints()
 
@@ -161,17 +163,14 @@ class PulpModeller(object):
         ms = self.processed_data.market_series
         bp = self.processed_data.battery_properties
         time_points = ms.time_points
-
-        for idx, t in enumerate(time_points):
-            if idx > 0:
-                t_prev = time_points[idx - 1]
-                self.m += (
-                    self.state_of_charge[t] ==
-                    self.state_of_charge[t_prev]
-                    + (self.charge_power_m1[t] + self.charge_power_m2[t]) * bp.charging_efficiency*Settings.step_size
-                    - (self.discharge_power_m1[t] + self.discharge_power_m2[t])*Settings.step_size / bp.discharging_efficiency,
-                    f"SoC_Update_{t}"
-                )
+        for tp, tp_next in zip(time_points[:-1], time_points[1:]):
+            self.m += (
+                self.state_of_charge[tp_next] ==
+                self.state_of_charge[tp]
+                + (self.charge_power_m1[tp] + self.charge_power_m2[tp]) * bp.charging_efficiency*Settings.step_size
+                - (self.discharge_power_m1[tp] + self.discharge_power_m2[tp])*Settings.step_size / bp.discharging_efficiency,
+                f"SoC_Update_{tp_next}"
+            )
 
     def _apply_terminal_soc_constraint(self):
         """
@@ -187,10 +186,9 @@ class PulpModeller(object):
             "Terminal_SoC"
         )
 
-    def _apply_terminal_soc_constraint_flexible(self, target_soc: float):
+    def _apply_terminal_soc_constraint_flexible(self):
         """
         Apply terminal state of charge constraint with flexibility.
-        :param target_soc: Target state of charge at the end of the time horizon.
         :return:
         """
         ms = self.processed_data.market_series
@@ -200,11 +198,11 @@ class PulpModeller(object):
         # Allow deviation from target_soc with a penalty in the objective function
         deviation = pulp.LpVariable("soc_deviation", lowBound=0, cat="Continuous")
         self.m += (
-            self.state_of_charge[time_points[-1]] >= target_soc - deviation,
+            self.state_of_charge[time_points[-1]] >= bp.initial_soc_mwh - deviation,
             "Terminal_SoC_Lower_Bound"
         )
         self.m += (
-            self.state_of_charge[time_points[-1]] <= target_soc + deviation,
+            self.state_of_charge[time_points[-1]] <= bp.initial_soc_mwh + deviation,
             "Terminal_SoC_Upper_Bound"
         )
         # Add penalty for deviation in the objective function
@@ -262,6 +260,20 @@ class PulpModeller(object):
             + discharge_power_m2[t] * market2_price_hh[t]
             - charge_power_m2[t] * market2_price_hh[t]
         )
+
+        ** Note on Market 2 pricing:
+        Market 2 prices are hourly but extrapolated to half-hourly intervals by duplicating each hourly price
+        for two consecutive half-hour time points. The model enforces that the charging/discharging power
+        for Market 2 is constant over these two half-hour intervals.
+
+        Therefore, the total energy traded in Market 2 over one hour is: power * 2 * step_size
+
+        Since step_size is 0.5 hours, this equals power * 1 hour.
+
+        In the objective, Market 2 terms are summed over half-hour intervals without multiplying by step_size,
+        effectively counting the full hourly energy traded at the hourly price.
+
+        This approach avoids double scaling and correctly accounts for Market 2 energy and revenue.
         """
         ms = self.processed_data.market_series
         time_points = ms.time_points
@@ -299,7 +311,7 @@ class PulpModeller(object):
         """
         Writes the LP file and, if infeasible, the IIS file for debugging.
         """
-        # Write IIS file if model is infeasible and solver supports it
+        # Write LP and IIS files if model is infeasible and solver supports it
         if pulp.LpStatus[self.m.status] == "Infeasible":
             self.m.writeLP(Settings.lp_filename)
             try:
