@@ -299,9 +299,9 @@ class PulpModeller(object):
         """
         Writes the LP file and, if infeasible, the IIS file for debugging.
         """
-        self.m.writeLP(Settings.lp_filename)
         # Write IIS file if model is infeasible and solver supports it
         if pulp.LpStatus[self.m.status] == "Infeasible":
+            self.m.writeLP(Settings.lp_filename)
             try:
                 self.m.writeMPS("model.mps")
                 pulp.findIIS(self.m, Settings.iis_filename)
