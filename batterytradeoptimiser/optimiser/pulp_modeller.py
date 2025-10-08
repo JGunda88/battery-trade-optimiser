@@ -108,7 +108,7 @@ class PulpModeller(object):
         self._apply_limits_on_charging_discharging()
         self._apply_no_simultaneous_charge_discharge()
         self._apply_soc_update()
-        # self._apply_terminal_soc_constraint()
+        self._apply_terminal_soc_constraint()
         # soft constraint modelling for terminal soc - activate if needed
         # self._apply_terminal_soc_constraint_flexible()
         self._apply_bounds_on_soc()

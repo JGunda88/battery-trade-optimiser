@@ -3,6 +3,7 @@ from utils.check_io_files import FileChecker
 from batterytradeoptimiser.optimiser.pre_processing import PreProcessor
 from batterytradeoptimiser.optimiser.pulp_modeller import PulpModeller
 from batterytradeoptimiser.optimiser.post_processor import PostProcessor
+from logger.logger import logger
 
 class Runner(object):
     def __init__(self, market_excel_path: str, battery_excel_path: str, results_output_path: str):
@@ -42,8 +43,10 @@ class Runner(object):
         """
         # pre-process input data
         processed_input = PreProcessor(market_data=self.market_path, battery_data=self.battery_path).run()
+        logger.info("Input data pre-processing completed")
         # build and solve the optimisation model
         solution = PulpModeller(processed_input).solve_model()
+        logger.info("Optimisation model solved")
         # post-process the solution and write the results into Excel file, and prepare a response dict for the app
         response = PostProcessor(solution, self.results_path).run()
 

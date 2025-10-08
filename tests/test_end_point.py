@@ -73,5 +73,5 @@ if __name__ == "__main__":
     Choose how to call the test: via API or direct call.
     Uncomment the desired test function.
     """
-    test_post_request_to_api()
-    # test_direct_call()
+    # test_post_request_to_api()
+    test_direct_call()
