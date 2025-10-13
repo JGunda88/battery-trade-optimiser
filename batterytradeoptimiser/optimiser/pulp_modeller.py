@@ -146,6 +146,14 @@ class PulpModeller(object):
         M = bp.max_discharge_mw + bp.max_charge_mw  # Big-M
 
         for tp in time_points:
+            """
+            Probably I should add different constraints - to apply more restriction. 
+            
+            self.discharge_power_m1[tp] <= M * self.is_discharging[tp]
+            self.charge_power_m1[tp] <= M * (1 - self.is_discharging[tp])
+            self.discharge_power_m2[tp] <= M * self.is_discharging[tp]
+            self.charge_power_m2[tp] <= M * (1 - self.is_discharging[tp])
+            """
             self.m += (
                 self.discharge_power_m1[tp] + self.discharge_power_m2[tp] <= M * self.is_discharging[tp],
                 f"No_Simultaneous_Discharge_{tp}"
