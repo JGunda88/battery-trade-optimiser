@@ -1,20 +1,40 @@
 # Battery Trade Optimiser
-Battery Trade Optimiser is a Python-based application designed to optimize the charging and discharging 
-schedules of a battery energy storage system (BESS) across two market segments with different settlement intervals.
-The goal is to maximize profit by optimally trading battery capacity in different markets while 
-respecting battery operational constraints.  
+## Overview
+Battery Trade Optimiser is a prototype optimisation service designed to determine optimal charging and 
+discharging schedules for a Battery Energy Storage System across multiple electricity market segments with different 
+settlement intervals.
 
-> **Note that the project is still in its early stage, as it seems to have performance issues with larger datasets and 
-> also issues with constraint modelling.**
+The objective is to maximise trading value while respecting battery operational constraints such as state of charge 
+limits, charge and discharge limits, and temporal consistency across markets.
+
+## What this Project Demonstrates
+- End to end optimisation workflow from raw data to decision outputs
+- Handling of multiple market time resolutions (half-hourly and hourly)
+- Structured separation of preprocessing, modelling, and post-processing
+- Exposure of optimisation logic through an API service
+
+## Problem Context
+Battery operators often participate in multiple electricity markets simultaneously, where:
+
+- Different markets operate at different time resolutions
+- Prices vary across time and across markets
+- Operational constraints must be strictly enforced
+
+This results in a coupled optimisation problem involving:
+- Time alignment across markets
+- State of charge tracking over time
+- Charge and discharge scheduling decisions
+- Revenue maximisation under operational constraints
+
+This project provides a simplified but representative implementation of such a problem.
 
 ## Project Overview
 This project provides a complete pipeline for battery trading optimization, including:
-- Data Pre-processing: Reads and processes input data from Excel files containing battery properties and 
-  market price series.
-- Mathematical Optimization Model: Formulates and solves a MILP model 
-  using PuLP to determine optimal battery charge/discharge profiles.
-- Post-processing: Extracts and writes the optimization results to Excel file.
-- API Interface: A FastAPI-based REST API exposes the optimization functionality.
+- Data Pre-processing: Reads and processes input data from Excel files containing battery properties and market price series.
+- Mathematical Optimization Model: Formulates and solves a MILP model using PuLP to determine optimal battery 
+  charge/discharge profiles.
+- Post-processing: Extracts optimisation results and writes outputs to Excel.
+- API Interface: A FastAPI based REST interface exposes the optimisation workflow.
  
 # Key Features
 ### Battery Properties Handling: 
@@ -91,24 +111,25 @@ poetry run python app.py
 1. Prepare input Excel files:
 Market Data: Two sheets named "Half-hourly data" and "Hourly data" with timestamps and prices.
 Battery Properties: A sheet named "Data" with parameters and values.
-Sample input files are provided in the "sample_data" folder.
-2. Adjust the settings in optitimier/settings.py as needed (e.g., solver choice, market horizon, etc).
+Sample input files are provided in the "sample_data" folder. 
+Some scripts reference local file paths and solver configurations. These should be updated based on the target environment before execution.
+2. Configure settings in optimiser/settings.py if required (e.g., solver choice, market horizon, etc).
 3. Run the FastAPI server: 
     ```shell
     uvicorn app:app --host 127.0.0.1 --port 8000 --reload
     ```
-   4. Submit a POST request to /optimise_battery with JSON body:
-       ```json
-      {
-        "market_excel_path": "path/to/market_data.xlsx",
-        "battery_excel_path": "path/to/battery_properties.xlsx",
-        "results_output_path": "path/to/output_results.xlsx"
-      }
-      ```   
-5. Receive optimization results including profit objective and output file lo
+4. Submit a POST request to /optimise_battery with JSON body:
+    ```json
+   {
+     "market_excel_path": "path/to/market_data.xlsx",
+     "battery_excel_path": "path/to/battery_properties.xlsx",
+     "results_output_path": "path/to/output_results.xlsx"
+   }
+   ```   
+5. Retrieve optimization results including objective value and output file
 
 # Dependencies
-Project dependecies are managed via poetry.  To install dependencies, run:
+Project dependencies are managed via poetry. To install dependencies, run:
 ```shell
 poetry install
 ```
@@ -122,10 +143,8 @@ Key dependencies include:
 - Optional: Gurobi or CPLEX solvers 
  
 # Testing
-At present no unit tests are provided.
-But there is a test script "test_end_point.py" under tests folder to test the API endpoint with sample data files.
-The user can use this script to test the functionality at API level or the Optimisation level.
- > **This could be the easiest approach to test the functionality once the virtual environment with needed depedencies 
- > are created.**
- # Contact
+Basic test scripts are included to validate preprocessing and optimisation behaviour. 
+These can be used to test both API level execution and optimisation outputs.
+
+# Contact
 For questions or contributions, please contact Jagadeesh Gunda, jack.jagadeesh@gmail.com.
