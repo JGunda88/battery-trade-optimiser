@@ -8,8 +8,8 @@ from batterytradeoptimiser.optimiser.pre_processing import PreProcessor, Battery
 class TestPreProcessor(unittest.TestCase):
     def setUp(self):
         # Update these paths to point to your sample test Excel files
-        self.market_data_path = Path(r"C:\Users\JGunda\Desktop\BatterTradeOptimiser\sample_data\BatteryProperties.xlsx")
-        self.battery_data_path = Path(r"C:\Users\JGunda\Desktop\BatterTradeOptimiser\sample_data\MarketData.xlsx")
+        self.market_data_path = Path(r"...\BatterTradeOptimiser\sample_data\BatteryProperties.xlsx")
+        self.battery_data_path = Path(r"...\BatterTradeOptimiser\sample_data\MarketData.xlsx")
 
     def test_preprocessor_run(self):
         preprocessor = PreProcessor(market_data=self.market_data_path, battery_data=self.battery_data_path)

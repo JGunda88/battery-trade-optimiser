@@ -14,9 +14,9 @@ TIMEOUT = 120  # seconds
 
 # Payload with paths to input and output files
 payload = {
-    "market_excel_path": r"C:\Users\JGunda\Desktop\BatterTradeOptimiser\sample_data\MarketData.xlsx",
-    "battery_excel_path": r"C:\Users\JGunda\Desktop\BatterTradeOptimiser\sample_data\BatteryProperties.xlsx",
-    "results_output_path": r"C:\Users\JGunda\Desktop\BatterTradeOptimiser\sample_data\results.xlsx"
+    "market_excel_path": r"...BatterTradeOptimiser\sample_data\MarketData.xlsx",
+    "battery_excel_path": r"...\BatterTradeOptimiser\sample_data\BatteryProperties.xlsx",
+    "results_output_path": r"...\BatterTradeOptimiser\sample_data\results.xlsx"
 }
 
 def test_post_request_to_api():
